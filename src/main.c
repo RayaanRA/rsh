@@ -1,39 +1,22 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <string.h>
-#include <stdlib.h>
+#include "parse.h"
+#include "exec.h"
 
 int main() {
-	int pid;
-	int status;
-	int ret = 0;
 
-	int size = 51;
-	char input[51];
+	int size = 1024;
+	char input[1024];
+	char* argv[64];
+	char wd[50];
+	bool didExecute = false;
+	(void) getcwd(wd, 50);
 
 	while(1) {
 
-		printf("rsh > ");
+		printf("(rsh) %s > ", wd);
 		fgets(input, size, stdin);
-		input[strcspn(input, "\n")] = '\0';
-		// parse more
-		if (strcmp(input, "exit") == 0) {
-			exit(EXIT_SUCCESS);
+		didExecute = parseInput(input, argv, wd);
+		if (!didExecute) {
+			execute(argv);
 		}
-		pid = fork();
-
-		if (pid == -1) {
-			perror("fork");
-		} else if (pid == 0) {
-			ret = execvp(input, NULL);
-			if (ret == -1) {
-				printf("Error executing command.\n");
-				exit(EXIT_FAILURE);
-			}
-		} else {
-			waitpid(pid, &status, WUNTRACED);
-		}
-
 	};
 }
