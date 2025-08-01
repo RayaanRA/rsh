@@ -1,2 +1,2 @@
 all:
-	gcc src/*.c -o rsh -Iinclude/
+	gcc src/*.c -o rsh -Iinclude/	

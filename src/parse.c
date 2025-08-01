@@ -1,9 +1,9 @@
 #include "parse.h"
 
-bool parseInput(char input[], char* argv[], char wd[]) {
+bool parseInput(char input[], char* argv[], char wd[], char tokens[][64]) {
 	input[strcspn(input, "\n")] = '\0';
 
-	char *token = strtok(input, " \t\n");
+	/*char *token = strtok(input, " \t\n");
 	int i = 0;
 	while (token && i < 64) {
 		argv[i++] = token;
@@ -12,10 +12,15 @@ bool parseInput(char input[], char* argv[], char wd[]) {
 	if (i > 0) {
 		argv[i] = NULL;
 	}
+
+	*/
+
+	tokenize(input, argv, tokens);
+
 	if (strcmp(argv[0], "exit") == 0) {
 		exit(EXIT_SUCCESS);
 	} else if (strcmp(argv[0], "cd") == 0) {
-		if (i == 1) {
+		if (!argv[1]) {
 			if (chdir(getenv("HOME")) != 0) {
 				perror("cd");
 			}
@@ -33,6 +38,41 @@ bool parseInput(char input[], char* argv[], char wd[]) {
 	}
 
 	return false;
+}
+
+void tokenize(char input[], char* argv[], char tokens[][64]) {
+	int i = 0;
+	int j = 0;
+	int h = 0;
+	while (input[i] != '\0' && h < 64) {
+		while (input[i] != ' ' && input[i] != '\0') {
+			if (input[i] != '"') {
+				tokens[h][j] = input[i];
+				j++;
+				i++;
+			} else {
+				i++; // skip first quote
+				while (input[i] != '"') {
+					tokens[h][j] = input[i];
+					j++;
+					i++;
+				}
+				i++; // skip last quote
+			}
+
+		}
+		tokens[h][j] = '\0';
+		i++;
+		h++;
+		j = 0;
+	}
+
+	for (int k = 0; k < h; k++) {
+		argv[k] = tokens[k];
+	}
+	if (h > 0) {
+		argv[h] = NULL;
+	}
 }
 
 
