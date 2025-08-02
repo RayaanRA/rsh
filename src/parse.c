@@ -1,21 +1,8 @@
 #include "parse.h"
+#include "exec.h"
 
-bool parseInput(char input[], char* argv[], char wd[], char tokens[][64]) {
-	input[strcspn(input, "\n")] = '\0';
-
-	/*char *token = strtok(input, " \t\n");
-	int i = 0;
-	while (token && i < 64) {
-		argv[i++] = token;
-		token = strtok(NULL, " \t\n");
-	}
-	if (i > 0) {
-		argv[i] = NULL;
-	}
-
-	*/
-
-	tokenize(input, argv, tokens);
+bool parseInput(char input[], char* argv[], char tokens[][64]) {
+	// Built-in commands
 
 	if (strcmp(argv[0], "exit") == 0) {
 		exit(EXIT_SUCCESS);
@@ -40,38 +27,79 @@ bool parseInput(char input[], char* argv[], char wd[], char tokens[][64]) {
 	return false;
 }
 
-void tokenize(char input[], char* argv[], char tokens[][64]) {
-	int i = 0;
-	int j = 0;
-	int h = 0;
-	while (input[i] != '\0' && h < 64) {
-		while (input[i] != ' ' && input[i] != '\0') {
-			if (input[i] != '"') {
-				tokens[h][j] = input[i];
-				j++;
-				i++;
+int tokenize(char input[], char* argv[], char tokens[][64]) {
+	input[strcspn(input, "\n")] = '\0';
+	int inputIndex = 0;
+	int tokenIndex = 0;
+	int tokenCount = 0;
+	while (input[inputIndex] != '\0' && tokenCount < 64) {
+		while (input[inputIndex] != ' ' && input[inputIndex] != '\0') {
+			if (input[inputIndex] != '"') {
+				tokens[tokenCount][tokenIndex] = input[inputIndex];
+				tokenIndex++;
+				inputIndex++;
 			} else {
-				i++; // skip first quote
-				while (input[i] != '"') {
-					tokens[h][j] = input[i];
-					j++;
-					i++;
+				inputIndex++; // skip first quote
+				while (input[inputIndex] != '"') {
+					tokens[tokenCount][tokenIndex] = input[inputIndex];
+					tokenIndex++;
+					inputIndex++;
 				}
-				i++; // skip last quote
+				inputIndex++; // skip last quote
+			}
+
+			if (input[inputIndex] == '$') {
+
 			}
 
 		}
-		tokens[h][j] = '\0';
-		i++;
-		h++;
-		j = 0;
+		tokens[tokenCount][tokenIndex] = '\0';
+		inputIndex++;
+		tokenCount++;
+		tokenIndex = 0;
+	}
+	
+
+	for (int j = 0; j < tokenCount; j++) {
+		argv[j] = tokens[j];
 	}
 
-	for (int k = 0; k < h; k++) {
-		argv[k] = tokens[k];
+
+	for (int i = 0; i < tokenCount; i++) {
+		if (argv[i][0] == '$') {
+			argv[i] = getenv(argv[i] + 1);
+		}
 	}
-	if (h > 0) {
-		argv[h] = NULL;
+
+	if (tokenCount > 0) {
+		argv[tokenCount] = NULL;
+	}
+	return tokenCount;
+}
+
+
+void redirect(char *argv[], int *tokenCount) {
+	for (int i = 0; i < *tokenCount - 1; i++) {
+		if (strcmp(argv[i], ">") == 0) {
+			char *file = argv[i + 1];
+			int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			if (fd < 0) {
+				perror("open");
+				exit(1);
+			}
+			if (dup2(fd, 1) < 0) {
+				perror("dup2");
+				exit(1);
+			}
+			close(fd);
+			for (int j = i; j + 2 < *tokenCount; j++) {
+				argv[j] = argv[j + 2];
+			}
+			argv[*tokenCount - 2] = NULL;
+			argv[*tokenCount - 1] = NULL;
+			*tokenCount -= 2;
+			break;
+		}
 	}
 }
 
