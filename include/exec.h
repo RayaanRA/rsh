@@ -13,7 +13,6 @@
 
 void execute(char* argv[]);
 
-extern char wd[50];
 
 
 #endif

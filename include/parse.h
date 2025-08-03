@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "context.h"  // contains ShellContext
 
-bool parseInput(char input[], char* argv[], char tokens[][64]);
+bool parse_input(ShellContext *ctx, char input[], char* argv[], char tokens[][64]);
 int tokenize(char input[], char* argv[], char tokens[][64]);
-void redirect(char* argv[], int* tokenCount);
+void redirect(char* argv[], int* token_count);
 
 #endif
-

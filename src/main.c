@@ -1,44 +1,45 @@
 #include "parse.h"
 #include "exec.h"
 
-char wd[50];
-int sigintReceived = 0;
-void sigintHandler(int signum);
+void sigint_handler(int signum);
+
+ShellContext ctx;
 
 int main() {
+    int size = 1024;
+    char input[1024];
+    char tokens[64][64];
+    char* argv[65];
 
-	int size = 1024;
-	char input[1024];
-	char tokens[64][64];
-	char* argv[65];
-	bool didExecute = false;
-	(void) getcwd(wd, 50);
-	if (signal(SIGINT, sigintHandler) == SIG_ERR) {
-		perror("signal");
-		return EXIT_FAILURE;
-	}
-	
-	while (1) {
-    	if (sigintReceived) {
-        	putchar('\n');
-        	sigintReceived = 0;
-    	}
+    (void) getcwd(ctx.wd, 50);
+    ctx.sigint_received = 0;
 
-    	printf("(rsh) %s > ", wd);
-    	if (!fgets(input, size, stdin)) break; // handle EOF
+    if (signal(SIGINT, sigint_handler) == SIG_ERR) {
+        perror("signal");
+        return EXIT_FAILURE;
+    }
 
-    	int tokenCount = tokenize(input, argv, tokens);
+    while (1) {
+        if (ctx.sigint_received) {
+            putchar('\n');
+            ctx.sigint_received = 0;
+        }
 
-    	if (!parseInput(input, argv, tokens)) {
-        	execute(argv);
-    	}
-    	input[0] = '\0';
-	}
+        printf("(rsh) %s > ", ctx.wd);
+        if (!fgets(input, size, stdin)) break;
 
+        int token_count = tokenize(input, argv, tokens);
+
+        if (!parse_input(&ctx, input, argv, tokens)) {
+            execute(argv);
+        }
+
+        input[0] = '\0';
+    }
 }
 
-void sigintHandler(int signum) {
-	sigintReceived = 1;
-	waitpid(-1, NULL, WNOHANG);
-	signal(SIGINT, sigintHandler);
+void sigint_handler(int signum) {
+    ctx.sigint_received = 1;
+    waitpid(-1, NULL, WNOHANG);
+    signal(SIGINT, sigint_handler);
 }

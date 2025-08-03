@@ -1,106 +1,86 @@
 #include "parse.h"
-#include "exec.h"
+#include "parse.h"
+#include <stdlib.h>  // exit, getenv
+#include <stdio.h>   // printf, perror
+#include <unistd.h>  // chdir, getcwd
+#include <string.h>  // strcmp
 
-bool parseInput(char input[], char* argv[], char tokens[][64]) {
-	// Built-in commands
+void handle_env_variables(char* argv[], int token_count);
 
-	if (strcmp(argv[0], "exit") == 0) {
-		exit(EXIT_SUCCESS);
-	} else if (strcmp(argv[0], "cd") == 0) {
-		if (!argv[1]) {
-			if (chdir(getenv("HOME")) != 0) {
-				perror("cd");
-			}
-		} else {
-			if(chdir(argv[1]) != 0) {
-				perror("cd");
-			}
-		}
 
-		(void) getcwd(wd, 50);
-		return true;
-	} else if (strcmp(argv[0], "help") == 0) {
-		printf("\n--Help menu--\nBuilt-in commands:\nexit - exit the shell\ncd - change working directory\nhelp - see the help menu\n\n");
-		return true;
-	}
+bool parse_input(ShellContext *ctx, char input[], char* argv[], char tokens[][64]) {
+    if (strcmp(argv[0], "exit") == 0) {
+        exit(EXIT_SUCCESS);
+    } else if (strcmp(argv[0], "cd") == 0) {
+        if (!argv[1]) {
+            if (chdir(getenv("HOME")) != 0) {
+                perror("cd");
+            }
+        } else {
+            if (chdir(argv[1]) != 0) {
+                perror("cd");
+            }
+        }
 
-	return false;
+        (void) getcwd(ctx->wd, 50);
+        return true;
+    } else if (strcmp(argv[0], "help") == 0) {
+        printf("\n--Help menu--\nBuilt-in commands:\nexit - exit the shell\ncd - change working directory\nhelp - see the help menu\n\n");
+        return true;
+    }
+
+    return false;
 }
 
 int tokenize(char input[], char* argv[], char tokens[][64]) {
 	input[strcspn(input, "\n")] = '\0';
-	int inputIndex = 0;
-	int tokenIndex = 0;
-	int tokenCount = 0;
-	while (input[inputIndex] != '\0' && tokenCount < 64) {
-		while (input[inputIndex] != ' ' && input[inputIndex] != '\0') {
-			if (input[inputIndex] != '"') {
-				tokens[tokenCount][tokenIndex] = input[inputIndex];
-				tokenIndex++;
-				inputIndex++;
+	int input_index = 0;
+	int token_index = 0;
+	int token_count = 0;
+
+	while (input[input_index] != '\0' && token_count < 64) {
+		while (input[input_index] == ' ') input_index++; // skip leading spaces
+
+		while (input[input_index] != ' ' && input[input_index] != '\0') {
+			if (input[input_index] != '"') {
+				tokens[token_count][token_index++] = input[input_index++];
 			} else {
-				inputIndex++; // skip first quote
-				while (input[inputIndex] != '"') {
-					tokens[tokenCount][tokenIndex] = input[inputIndex];
-					tokenIndex++;
-					inputIndex++;
+				input_index++; // skip opening quote
+				while (input[input_index] != '"' && input[input_index] != '\0') {
+					tokens[token_count][token_index++] = input[input_index++];
 				}
-				inputIndex++; // skip last quote
+				if (input[input_index] == '"') input_index++; // skip closing quote
 			}
-
-			if (input[inputIndex] == '$') {
-
-			}
-
 		}
-		tokens[tokenCount][tokenIndex] = '\0';
-		inputIndex++;
-		tokenCount++;
-		tokenIndex = 0;
-	}
-	
 
-	for (int j = 0; j < tokenCount; j++) {
+		tokens[token_count][token_index] = '\0';
+		token_index = 0;
+		token_count++;
+		if (input[input_index] != '\0') input_index++; // skip space
+	}
+
+	for (int j = 0; j < token_count; j++) {
 		argv[j] = tokens[j];
 	}
 
+	handle_env_variables(argv, token_count);
 
-	for (int i = 0; i < tokenCount; i++) {
+	if (token_count > 0) {
+		argv[token_count] = NULL;
+	}
+
+	return token_count;
+}
+
+void handle_env_variables(char* argv[], int token_count) {
+	for (int i = 0; i < token_count; i++) {
 		if (argv[i][0] == '$') {
-			argv[i] = getenv(argv[i] + 1);
-		}
-	}
-
-	if (tokenCount > 0) {
-		argv[tokenCount] = NULL;
-	}
-	return tokenCount;
-}
-
-
-void redirect(char *argv[], int *tokenCount) {
-	for (int i = 0; i < *tokenCount - 1; i++) {
-		if (strcmp(argv[i], ">") == 0) {
-			char *file = argv[i + 1];
-			int fd = open(file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-			if (fd < 0) {
-				perror("open");
-				exit(1);
+			char *env = getenv(argv[i] + 1);
+			if (env) {
+				argv[i] = env;
+			} else {
+				argv[i] = "";
 			}
-			if (dup2(fd, 1) < 0) {
-				perror("dup2");
-				exit(1);
-			}
-			close(fd);
-			for (int j = i; j + 2 < *tokenCount; j++) {
-				argv[j] = argv[j + 2];
-			}
-			argv[*tokenCount - 2] = NULL;
-			argv[*tokenCount - 1] = NULL;
-			*tokenCount -= 2;
-			break;
 		}
 	}
 }
-
-
