@@ -6,4 +6,12 @@ typedef struct {
     int sigint_received;
 } ShellContext;
 
+typedef enum { REDIR_NONE, REDIR_OUTPUT, REDIR_INPUT } RedirType;
+
+typedef struct {
+    RedirType type;
+    char *file;
+} Redirection;
+
+
 #endif

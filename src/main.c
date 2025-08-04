@@ -28,10 +28,11 @@ int main() {
         printf("(rsh) %s > ", ctx.wd);
         if (!fgets(input, size, stdin)) break;
 
-        int token_count = tokenize(input, argv, tokens);
-
-        if (!parse_input(&ctx, input, argv, tokens)) {
-            execute(argv);
+        int token_count = split_into_tokens(argv, input, tokens);
+        handle_env_variables(argv, token_count);
+        Redirection redir_info = parse_redirection(argv, &token_count);
+        if (!handle_built_in_commands(argv, &ctx)) {
+            execute(argv, redir_info);
         }
 
         input[0] = '\0';

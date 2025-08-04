@@ -1,38 +1,33 @@
 #include "parse.h"
-#include "parse.h"
-#include <stdlib.h>  // exit, getenv
-#include <stdio.h>   // printf, perror
-#include <unistd.h>  // chdir, getcwd
-#include <string.h>  // strcmp
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 
-void handle_env_variables(char* argv[], int token_count);
+void handle_cd(char* argv[], ShellContext *ctx);
 
 
-bool parse_input(ShellContext *ctx, char input[], char* argv[], char tokens[][64]) {
+bool handle_built_in_commands(char* argv[], ShellContext *ctx) {
+    if (!argv[0]) return false;
+
     if (strcmp(argv[0], "exit") == 0) {
         exit(EXIT_SUCCESS);
-    } else if (strcmp(argv[0], "cd") == 0) {
-        if (!argv[1]) {
-            if (chdir(getenv("HOME")) != 0) {
-                perror("cd");
-            }
-        } else {
-            if (chdir(argv[1]) != 0) {
-                perror("cd");
-            }
-        }
+    }
 
-        (void) getcwd(ctx->wd, 50);
+    if (strcmp(argv[0], "cd") == 0) {
+        handle_cd(argv, ctx);
         return true;
-    } else if (strcmp(argv[0], "help") == 0) {
-        printf("\n--Help menu--\nBuilt-in commands:\nexit - exit the shell\ncd - change working directory\nhelp - see the help menu\n\n");
+    }
+
+    if (strcmp(argv[0], "help") == 0) {
+        puts("\n--Help menu--\nBuilt-in commands:\nexit - exit the shell\ncd - change working directory\nhelp - see the help menu\n");
         return true;
     }
 
     return false;
 }
 
-int tokenize(char input[], char* argv[], char tokens[][64]) {
+int split_into_tokens(char* argv[], char input[], char tokens[][64]) {
 	input[strcspn(input, "\n")] = '\0';
 	int input_index = 0;
 	int token_index = 0;
@@ -63,14 +58,13 @@ int tokenize(char input[], char* argv[], char tokens[][64]) {
 		argv[j] = tokens[j];
 	}
 
-	handle_env_variables(argv, token_count);
-
 	if (token_count > 0) {
 		argv[token_count] = NULL;
 	}
 
 	return token_count;
 }
+
 
 void handle_env_variables(char* argv[], int token_count) {
 	for (int i = 0; i < token_count; i++) {
@@ -84,3 +78,41 @@ void handle_env_variables(char* argv[], int token_count) {
 		}
 	}
 }
+
+void handle_cd(char* argv[], ShellContext *ctx) {
+    const char *path = argv[1] ? argv[1] : getenv("HOME");
+    if (chdir(path) != 0) {
+        perror("cd");
+    }
+    getcwd(ctx->wd, 50);
+}
+
+Redirection parse_redirection(char *argv[], int *token_count) {
+    Redirection redir_info = { .type = REDIR_NONE, .file = NULL };
+
+    if (*token_count < 3) return redir_info;
+
+    for (int i = 0; argv[i] != NULL; i++) {
+        if ((strcmp(argv[i], ">") == 0 || strcmp(argv[i], "<") == 0) && argv[i + 1] != NULL) {
+            redir_info.type = (strcmp(argv[i], ">") == 0) ? REDIR_OUTPUT : REDIR_INPUT;
+            redir_info.file = argv[i + 1];
+
+            // shift argv to remove redirection
+            int j = i;
+            while (argv[j + 2] != NULL) {
+                argv[j] = argv[j + 2];
+                j++;
+            }
+            argv[j] = NULL;
+            *token_count -= 2;
+            break;
+        }
+    }
+
+    return redir_info;
+}
+
+
+
+
+

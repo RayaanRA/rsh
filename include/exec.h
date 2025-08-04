@@ -9,9 +9,10 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h>
+#include "context.h"
 
 
-void execute(char* argv[]);
+void execute(char* argv[], Redirection redir_info);
 
 
 
