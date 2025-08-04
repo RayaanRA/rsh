@@ -12,7 +12,7 @@
 #include "context.h"
 
 
-void execute(char* argv[], Redirection redir_info);
+void execute(char* argv[], Redirection redir_info, PipeInfo pipe_info);
 
 
 

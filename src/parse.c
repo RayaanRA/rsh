@@ -51,7 +51,7 @@ int split_into_tokens(char* argv[], char input[], char tokens[][64]) {
 		tokens[token_count][token_index] = '\0';
 		token_index = 0;
 		token_count++;
-		if (input[input_index] != '\0') input_index++; // skip space
+		if (input[input_index] != '\0') input_index++;
 	}
 
 	for (int j = 0; j < token_count; j++) {
@@ -112,7 +112,18 @@ Redirection parse_redirection(char *argv[], int *token_count) {
     return redir_info;
 }
 
+PipeInfo handle_pipe(char* argv[]) {
+    PipeInfo pipe_info = { .left_argv = argv, .right_argv = NULL, .has_pipe = false };
 
+    for (int i = 0; argv[i] != NULL; i++) {
+        if (strcmp(argv[i], "|") == 0) {
+            argv[i] = NULL;
+            pipe_info.right_argv = &argv[i + 1];
 
+            pipe_info.has_pipe = true;
+            break;
+        }
+    }
 
-
+    return pipe_info;
+}

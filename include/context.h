@@ -13,5 +13,10 @@ typedef struct {
     char *file;
 } Redirection;
 
+typedef struct {
+    char** left_argv;
+    char** right_argv;
+    bool has_pipe;
+} PipeInfo;
 
 #endif

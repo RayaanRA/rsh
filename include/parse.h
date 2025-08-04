@@ -14,5 +14,5 @@ void redirect(char* argv[], int* token_count);
 int split_into_tokens(char* argv[], char input[], char tokens[][64]);
 void handle_env_variables(char* argv[], int token_count);
 Redirection parse_redirection(char *argv[], int *token_count);
-
+PipeInfo handle_pipe(char* argv[]);
 #endif

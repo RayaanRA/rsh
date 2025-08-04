@@ -31,8 +31,9 @@ int main() {
         int token_count = split_into_tokens(argv, input, tokens);
         handle_env_variables(argv, token_count);
         Redirection redir_info = parse_redirection(argv, &token_count);
+        PipeInfo pipe_info = handle_pipe(argv);
         if (!handle_built_in_commands(argv, &ctx)) {
-            execute(argv, redir_info);
+            execute(argv, redir_info, pipe_info);
         }
 
         input[0] = '\0';
