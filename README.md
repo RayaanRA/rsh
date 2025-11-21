@@ -1,6 +1,6 @@
-# rsh - Rayaan's Shell
+# rsh
 
-rsh is a small Unix shell written in C. It supports basic command execution, I/O redirection, pipes, environment variable expansion, and a few built-in commands. It was made to better understand low-level process control, system calls, and shell behavior without relying on external libraries or frameworks.
+rsh is a small Unix shell written in C. It supports basic command execution, I/O redirection, pipes, environment variable expansion, and a few built-in commands.
 
 ## Features
 
